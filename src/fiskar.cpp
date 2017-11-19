@@ -12,21 +12,16 @@
 #define LAMP6 8
 #define LAMP7 9
 #define NLAMPS 8
-#define DEFAULTLAMPS 8
-
-
-
-//let g:neomake_make_maker = { 'exe': 'make',  'args': [], 'errorformat': '%f:%l:%c: %m' }
-
-volatile int CURRENTLAMPS=1;
 
 typedef void (*hookF)(void*);
 
 struct timeT {
     int hour0;
     int minute0;
+    int second0;
     int hourF;
     int minuteF;
+    int secondF;
 };
 
 struct timerT {
@@ -44,8 +39,17 @@ struct lampT {
 };
 
 const int lampPins[NLAMPS] = {LAMP0, LAMP1, LAMP2, LAMP3, LAMP4, LAMP5, LAMP6, LAMP7};
-const timeT lampTimers[DEFAULTLAMPS] = {{.hour0=0, .minute0=5, .hourF=0, .minuteF=8}};
-lampT lamps[DEFAULTLAMPS];
+const timeT lampTimers[NLAMPS] = {
+  {.hour0=0, .minute0=0, .second0=30, .hourF=0, .minuteF=1, .secondF=30},
+  {.hour0=0, .minute0=2, .second0=30, .hourF=0, .minuteF=3, .secondF=30},
+  {.hour0=0, .minute0=3, .second0=30, .hourF=0, .minuteF=4, .secondF=30},
+  {.hour0=0, .minute0=1, .second0=30, .hourF=0, .minuteF=3, .secondF=30},
+  {.hour0=0, .minute0=2, .second0=30, .hourF=0, .minuteF=4, .secondF=30},
+  {.hour0=0, .minute0=1, .second0=30, .hourF=0, .minuteF=5, .secondF=30},
+  {.hour0=0, .minute0=5, .second0=30, .hourF=0, .minuteF=12, .secondF=30},
+  {.hour0=0, .minute0=7, .second0=30, .hourF=0, .minuteF=20, .secondF=30}
+};
+lampT lamps[NLAMPS];
 
 void SerialPrintF(char *fmt, ... ){
         char buf[128]; // resulting string limited to 128 chars
@@ -56,20 +60,37 @@ void SerialPrintF(char *fmt, ... ){
         Serial.print(buf);
 }
 
+int toogleLamp(lampT *lamp) {
+  int mode;
+  lamp->state = !lamp->state;
+  if (!lamp->state)
+    mode = LOW;
+  else
+    mode = HIGH;
+  digitalWrite(lamp->pin, mode);
+  
+  return lamp->state;
+}
+
 void onTimerOn(void *data) {
   lampT *lamp = (lampT *)data;
+  SerialPrintF("onTimerOn: lamp %d[%p], current state: %d\n", lamp->pin, lamp, lamp->state);
+  toogleLamp(lamp);
 }
 
 void onTimerOff(void *data) {
   lampT *lamp = (lampT *)data;
+  SerialPrintF("onTimerOff: lamp %d[%p], current state: %d\n", lamp->pin, lamp, lamp->state);
+  toogleLamp(lamp);
 }
 
 lampT * findLampByAlarmId(AlarmID_t alarmId) {
   lampT lamp;
-  for (int i=0;i < CURRENTLAMPS;i++) {
+  SerialPrintF("Searching lamp by alarm in %p\n", lamps);
+  for (int i=0;i<NLAMPS;i++) {
     lamp = lamps[i];
     if (alarmId == lamp.timer.alarmId0 || alarmId == lamp.timer.alarmIdF)
-      return &lamp;
+      return &lamps[i];
   }
   return NULL;
 }
@@ -78,10 +99,9 @@ void onAlarmHook() {
   lampT *lamp;
   AlarmID_t currentAlarm = Alarm.getTriggeredAlarmId();
   lamp = findLampByAlarmId(currentAlarm);
-  SerialPrintF("Got alarm: %d\n", lamp);
   if (lamp) {
-    Serial.println("Triggered alarm with id ...");
-    if (lamp->state) {
+    SerialPrintF("Got alarm %d for lamp %d[%p] in state %d\n", currentAlarm, lamp->pin, lamp, lamp->state);
+    if (!lamp->state) {
       lamp->timer.onHook((void *)lamp);
     } else {
       lamp->timer.offHook((void *)lamp);
@@ -95,10 +115,10 @@ void setTimer(timerT *timer, timeT time) {
   timer->timerTime = time;
   timer->onHook = onTimerOn;
   timer->offHook = onTimerOff;
-  SerialPrintF("Adding alarm starting %d %d\n", time.hour0, time.minute0);
-  timer-> alarmId0 = Alarm.alarmRepeat(time.hour0, time.minute0, 0, onAlarmHook);
-  SerialPrintF("Adding alarm ending %d %d\n", time.hourF, time.minuteF);
-  timer-> alarmIdF = Alarm.alarmRepeat(time.hourF, time.minuteF, 0, onAlarmHook);
+  SerialPrintF("Adding alarm starting %d:%d:%d\n", time.hour0, time.minute0, time.second0);
+  timer-> alarmId0 = Alarm.alarmRepeat(time.hour0, time.minute0, time.second0, onAlarmHook);
+  SerialPrintF("Adding alarm ending %d:%d:%d\n", time.hourF, time.minuteF, time.secondF);
+  timer-> alarmIdF = Alarm.alarmRepeat(time.hourF, time.minuteF, time.secondF, onAlarmHook);
 }
 
 void cancelTimer(timerT *timer) {
@@ -108,22 +128,10 @@ void cancelTimer(timerT *timer) {
   timer->alarmIdF = dtINVALID_ALARM_ID;
 }
 
-int toogleLamp(lampT *lamp) {
-  int mode;
-  lamp->state = !lamp->state;
-  if (lamp->state)
-    mode = LOW;
-  else
-    mode = HIGH;
-  digitalWrite(lamp->pin, mode);
-  
-  return lamp->state;
-}
-
 void initLamps() {
   lampT *lamp;
   int pin;
-  for (int i=0;i<CURRENTLAMPS;i++) {
+  for (int i=0;i<NLAMPS;i++) {
     lamp = &lamps[i];
     pin = lampPins[i];
     lamp->pin = pin;
@@ -131,9 +139,7 @@ void initLamps() {
     digitalWrite(lamp->pin, LOW);
     lamp->state = false;
     setTimer(&(lamp->timer), lampTimers[i]);
-    SerialPrintF("Setting up lamp %d with state %d [%d:%d - %d:%d]\n", lamp->pin, 
-                 lamp->state, lamp->timer.timerTime.hour0, lamp->timer.timerTime.minute0,
-                 lamp->timer.timerTime.hourF, lamp->timer.timerTime.minuteF);
+    SerialPrintF("Set up lamp %d[%p] with state %d\n", lamp->pin, lamp, lamp->state);
   }
 }
 
@@ -144,6 +150,7 @@ void initPins() {
 
 void setup() {
   Serial.begin(9600);
+  while (!Serial) ;
   Serial.println("Setting time ...");
   setTime(0, 0, 0, 18, 11, 2017);
   Serial.println("Initialiazing pins ...");
