@@ -51,7 +51,7 @@ const timeT lampTimers[NLAMPS] = {
 };
 lampT lamps[NLAMPS];
 
-void SerialPrintF(char *fmt, ... ){
+void SerialPrintF(const char *fmt, ... ){
         char buf[128]; // resulting string limited to 128 chars
         va_list args;
         va_start (args, fmt );
