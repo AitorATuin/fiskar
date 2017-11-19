@@ -16,12 +16,12 @@
 typedef void (*hookF)(void*);
 
 struct timeT {
-    int hour0;
-    int minute0;
-    int second0;
-    int hourF;
-    int minuteF;
-    int secondF;
+  int hour0;
+  int minute0;
+  int second0;
+  int hourF;
+  int minuteF;
+  int secondF;
 };
 
 struct timerT {
@@ -52,12 +52,12 @@ const timeT lampTimers[NLAMPS] = {
 lampT lamps[NLAMPS];
 
 void SerialPrintF(const char *fmt, ... ){
-        char buf[128]; // resulting string limited to 128 chars
-        va_list args;
-        va_start (args, fmt );
-        vsnprintf(buf, 128, fmt, args);
-        va_end (args);
-        Serial.print(buf);
+  char buf[128]; // resulting string limited to 128 chars
+  va_list args;
+  va_start (args, fmt );
+  vsnprintf(buf, 128, fmt, args);
+  va_end (args);
+  Serial.print(buf);
 }
 
 int toogleLamp(lampT *lamp) {
@@ -144,8 +144,8 @@ void initLamps() {
 }
 
 void initPins() {
-    for (int i=0;i<NLAMPS;i++) 
-      pinMode(i, OUTPUT);
+  for (int i=0;i<NLAMPS;i++) 
+    pinMode(i, OUTPUT);
 }
 
 void setup() {
@@ -157,11 +157,10 @@ void setup() {
   initPins();
   Serial.println("Initialiazing default lamps ...");
   initLamps();
-  Serial.println("Ready ...");
 }
 
 void loop() {
-  Alarm.delay(1000);
+  Serial.println("Ready ...");
 }
 
 
