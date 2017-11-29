@@ -53,10 +53,24 @@ bool _test_on_or_off(lamps_scheduler_T *lamps_scheduler, uint8_t *modes, int n) 
     return true;
 }
 
+bool _test_lamps_scheduler_sorted(lamp_timer_T *lamp_timers, uint8_t *lamp_modes, int n_lamps, int n_timers) {
+    lamps_scheduler_create(lamp_timers, n_lamps);
+    return _test_disabled_from(&lamps_scheduler, n_timers) && \
+       _test_on_or_off(&lamps_scheduler, lamp_modes, n_timers);
+}
+
+bool _test_lamps_scheduler_init(lamp_timer_T *lamp_timers, uint8_t n_lamps, uint8_t result) {
+    lamps_scheduler_create(lamp_timers, n_lamps);
+    lamps_scheduler_init(&lamps_scheduler);
+    return lamps_on == result;
+
+}
+
 bool _test_lamps_scheduler_sorted_len0() {
+    uint8_t lamp_modes[0] = {};
     lamp_timer_T lamp_timers[0] = {};
-    lamps_scheduler_create(lamp_timers, 0);
-    return _test_disabled_from(&lamps_scheduler, 0);
+    return _test_lamps_scheduler_sorted(lamp_timers, lamp_modes, 0, 0);
+    /* return _test_disabled_from(&lamps_scheduler, 0); */
 }
 
 bool _test_lamps_scheduler_sorted_len1_1() {
@@ -64,9 +78,7 @@ bool _test_lamps_scheduler_sorted_len1_1() {
     lamp_timer_T lamp_timers[1] = {
         {2, {{0, 1, 60}, {0, 1, 70}, {0, 1, 80}}}
     };
-    lamps_scheduler_create(lamp_timers, 1);
-    return _test_disabled_from(&lamps_scheduler, 6) && \
-        _test_on_or_off(&lamps_scheduler, lamp_modes, 6); 
+    return _test_lamps_scheduler_sorted(lamp_timers, lamp_modes, 1, 6);
 }
 
 bool _test_lamps_scheduler_sorted_len1_2() {
@@ -74,18 +86,14 @@ bool _test_lamps_scheduler_sorted_len1_2() {
     lamp_timer_T lamp_timers[1] = {
         {2, {{0, 1, 9}, {0, 12, 20}, {0, 35, 5}}}
     };
-    lamps_scheduler_create(lamp_timers, 1);
-    return _test_disabled_from(&lamps_scheduler, 6) && \
-        _test_on_or_off(&lamps_scheduler, lamp_modes, 6);
+    return _test_lamps_scheduler_sorted(lamp_timers, lamp_modes, 1, 6);
 }
 
 bool _test_lamps_scheduler_init_1() {
     lamps_on = 0;
     current_time = (timer_T){0, 0, 0};
     lamp_timer_T lamp_timers[0] = {};
-    lamps_scheduler_create(lamp_timers, 0);
-    lamps_scheduler_init(&lamps_scheduler);
-    return lamps_on == 0;
+    return _test_lamps_scheduler_init(lamp_timers, 0, 0);
 }
 
 bool _test_lamps_scheduler_init_2() {
@@ -94,9 +102,7 @@ bool _test_lamps_scheduler_init_2() {
     lamp_timer_T lamp_timers[1] = {
         {2, {{0, 0, 60}, {3, 0, 60}, {5, 0, 60}}}
     };
-    lamps_scheduler_create(lamp_timers, 1);
-    lamps_scheduler_init(&lamps_scheduler);
-    return lamps_on == 1;
+    return _test_lamps_scheduler_init(lamp_timers, 1, 1);
 }
 
 bool _test_lamps_scheduler_init_3() {
@@ -105,9 +111,7 @@ bool _test_lamps_scheduler_init_3() {
     lamp_timer_T lamp_timers[1] = {
         {2, {{0, 0, 60}, {3, 0, 60}, {5, 0, 60}}}
     };
-    lamps_scheduler_create(lamp_timers, 1);
-    lamps_scheduler_init(&lamps_scheduler);
-    return lamps_on == 0;
+    return _test_lamps_scheduler_init(lamp_timers, 1, 0);
 }
 
 bool _test_lamps_scheduler_init_4() {
@@ -116,9 +120,7 @@ bool _test_lamps_scheduler_init_4() {
     lamp_timer_T lamp_timers[1] = {
         {2, {{0, 0, 60}, {3, 0, 60}, {5, 0, 60}}}
     };
-    lamps_scheduler_create(lamp_timers, 1);
-    lamps_scheduler_init(&lamps_scheduler);
-    return lamps_on == 1;
+    return _test_lamps_scheduler_init(lamp_timers, 1, 1);
 }
 
 bool _test_lamps_scheduler_init_5() {
@@ -131,9 +133,7 @@ bool _test_lamps_scheduler_init_5() {
         {5, {{0, 0, 60}, {3, 0, 60}, {5, 0, 60}}},
         {6, {{0, 0, 60}, {3, 0, 60}, {5, 0, 60}}},
     };
-    lamps_scheduler_create(lamp_timers, 5);
-    lamps_scheduler_init(&lamps_scheduler);
-    return lamps_on == 31;
+    return _test_lamps_scheduler_init(lamp_timers, 5, 31);
 }
 
 static char * test_lamps_scheduler_sorted_len0() {
