@@ -144,6 +144,7 @@ void onAlarmHook() {
 
 void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
     registered_lamp_timer_T current_time;
+    get_current_time(&current_time);
     uint8_t initial_lamp_pins; 
     // Set lamps according to current_time
     for (int i=0;i<NLAMPS * NTIMERS * 2;i++) {
@@ -151,7 +152,12 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
 
         // Check if this timer is expired
         if (timer_compare(current_time, t) >= 0) {
-            initial_lamp_pins |= (t.mode == LAMP_ON ? 1 : 0) << i;
+            if (t.mode == LAMP_ON) {
+                initial_lamp_pins |= 1 << (t.lamp_pin - 2);
+            }
+            else if (t.mode == LAMP_OFF) {
+                initial_lamp_pins &= initial_lamp_pins ^ (1 << (t.lamp_pin - 2));
+            }
         } else {
             // first t in the future, next alarm
             lamps_scheduler->alarm_id = set_alarm(t, 0, onAlarmHook);
