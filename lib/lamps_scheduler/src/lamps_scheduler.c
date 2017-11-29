@@ -151,7 +151,7 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
 
         // Check if this timer is expired
         if (timer_compare(current_time, t) >= 0) {
-            initial_lamp_pins |= 1 << i;
+            initial_lamp_pins |= (t.mode == LAMP_ON ? 1 : 0) << i;
         } else {
             // first t in the future, next alarm
             lamps_scheduler->alarm_id = set_alarm(t, 0, onAlarmHook);

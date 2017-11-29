@@ -7,9 +7,10 @@ int tests_run = 0;
 
 lamps_scheduler_T lamps_scheduler;
 
-uint8_t init_lamps;
+uint8_t lamps_on = 0;
 
 extern void lamps_seton(uint8_t lamp_pin) {
+    lamps_on |= 1 << (lamp_pin - 2);
 }
 
 extern void lamps_setoff(uint8_t lamp_pin) {
@@ -19,6 +20,15 @@ extern void lamps_setoff(uint8_t lamp_pin) {
 extern uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t alarm_hook) {
     return 1;
 }
+
+bool _test_lamp_is_on(uint8_t *lamp_pins) {
+    for (int i=0; i<NLAMPS; i++) {
+        if (!((lamps_on & (1 << i) / i) == lamp_pins[i]))
+            return false;
+    }
+    return true;
+}
+
 
 bool _test_disabled_from(lamps_scheduler_T *lamps_scheduler, int n) {
     for (int i=n;i < NLAMPS * NTIMERS * 2; i++) {
@@ -62,7 +72,14 @@ bool _test_lamps_scheduler_sorted_len1_2() {
         _test_on_or_off(&lamps_scheduler, lamp_modes, 6);
 }
 
-llstatic char * test_lamps_scheduler_sorted_len0() {
+bool _test_lamps_scheduler_init_1() {
+    lamp_timer_T lamp_timers[0] = {};
+    lamps_scheduler_create(lamp_timers, 0);
+    lamps_scheduler_init(&lamps_scheduler);
+    return lamps_on == 0;
+}
+
+static char * test_lamps_scheduler_sorted_len0() {
     mu_assert("error, test_lamps_scheduler_sorted_len0", _test_lamps_scheduler_sorted_len0());
     return 0;
 }
@@ -77,10 +94,16 @@ static char * test_lamps_scheduler_sorted_len1_2() {
     return 0;
 }
 
+static char * test_lamps_scheduler_init_1() {
+    mu_assert("error, test_lamps_scheduler_init_1", _test_lamps_scheduler_init_1());
+    return 0;
+}
+
 static char * all_tests() {
     mu_run_test(test_lamps_scheduler_sorted_len0);
     mu_run_test(test_lamps_scheduler_sorted_len1_1);
     mu_run_test(test_lamps_scheduler_sorted_len1_2);
+    mu_run_test(test_lamps_scheduler_init_1);
     return 0;
 }
 
