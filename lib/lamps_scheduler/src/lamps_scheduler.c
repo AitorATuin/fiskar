@@ -5,6 +5,9 @@ void onAlarmHook();
 void lamps_scheduler_evaluate_registered_timers();
 lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler);
 int8_t timer_compare(registered_lamp_timer_T t1, registered_lamp_timer_T t2);
+uint16_t minutes_in_timer(registered_lamp_timer_T t);
+void timer_start(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
+void timer_end(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
 
 extern lamps_scheduler_T lamps_scheduler;
 
