@@ -37,8 +37,8 @@ typedef struct lamps_scheduler_T {
 } lamps_scheduler_T;
 
 // Interface exported
-extern void lamps_scheduler_create(lamp_timer_T *lamps, uint8_t n_timers);
-extern void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler); 
+void lamps_scheduler_create(lamp_timer_T *lamps, uint8_t n_timers);
+void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler); 
 
 // Functions needed
 void get_current_time(registered_lamp_timer_T *current_time);
