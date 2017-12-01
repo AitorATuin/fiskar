@@ -15,20 +15,20 @@ uint8_t new_alarm_id = 0;
 
 alarm_hook_t alarm_hook = NULL;
 
-extern void lamps_seton(uint8_t lamp_pin) {
+void lamps_seton(uint8_t lamp_pin) {
     lamps_on |= 1 << (lamp_pin - 2);
 }
 
-extern void lamps_setoff(uint8_t lamp_pin) {
+void lamps_setoff(uint8_t lamp_pin) {
 
 }
 
-extern uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t a_hook) {
+uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t a_hook) {
     alarm_hook = a_hook;
     return ++new_alarm_id;
 }
 
-extern void get_current_time(registered_lamp_timer_T *c_time) {
+void get_current_time(registered_lamp_timer_T *c_time) {
     c_time->hours = current_time.hours;
     c_time->minutes = current_time.minutes;
     c_time->mode = LAMP_ON;
