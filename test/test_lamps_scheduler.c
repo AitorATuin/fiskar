@@ -11,6 +11,10 @@ uint8_t lamps_on = 0;
 
 timer_T current_time = {0, 0, 0};
 
+uint8_t new_alarm_id = 0;
+
+alarm_hook_t alarm_hook = NULL;
+
 extern void lamps_seton(uint8_t lamp_pin) {
     lamps_on |= 1 << (lamp_pin - 2);
 }
@@ -19,13 +23,15 @@ extern void lamps_setoff(uint8_t lamp_pin) {
 
 }
 
-extern uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t alarm_hook) {
-    return 1;
+extern uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t a_hook) {
+    alarm_hook = a_hook;
+    return ++new_alarm_id;
 }
 
 extern void get_current_time(registered_lamp_timer_T *c_time) {
     c_time->hours = current_time.hours;
     c_time->minutes = current_time.minutes;
+    c_time->mode = LAMP_ON;
 }
 
 bool _test_lamp_is_on(uint8_t *lamp_pins) {
@@ -35,7 +41,6 @@ bool _test_lamp_is_on(uint8_t *lamp_pins) {
     }
     return true;
 }
-
 
 bool _test_disabled_from(lamps_scheduler_T *lamps_scheduler, int n) {
     for (int i=n;i < NLAMPS * NTIMERS * 2; i++) {
@@ -63,7 +68,6 @@ bool _test_lamps_scheduler_init(lamp_timer_T *lamp_timers, uint8_t n_lamps, uint
     lamps_scheduler_create(lamp_timers, n_lamps);
     lamps_scheduler_init(&lamps_scheduler);
     return lamps_on == result;
-
 }
 
 bool _test_lamps_scheduler_sorted_len0() {
@@ -136,6 +140,74 @@ bool _test_lamps_scheduler_init_5() {
     return _test_lamps_scheduler_init(lamp_timers, 5, 31);
 }
 
+bool _test_lamps_scheduler_evaluate_1() {
+    lamps_on = 0;
+    new_alarm_id = 0;
+    current_time = (timer_T){2, 0, 0};
+    lamp_timer_T lamp_timers[4] = {
+        {2, {{0, 0, 60}, {0, 0, 0}, {0, 0, 0}}},
+        {3, {{2, 0, 60}, {0, 0, 0}, {0, 0, 0}}},
+        {4, {{2, 0, 120}, {0, 0, 0}, {0, 0, 0}}},
+        {5, {{2, 0, 180}, {0, 0, 0}, {0, 0, 0}}},
+    };
+    bool res1 = _test_lamps_scheduler_init(lamp_timers, 4, 14);
+    bool res2 = lamps_scheduler.alarm_id == 1;
+    bool res3 = lamps_scheduler.current_timer_index == 5;
+
+    // First timer triggered
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res4 = lamps_scheduler.alarm_id == 2;
+    bool res5 = lamps_scheduler.current_timer_index == 6;
+
+    // Second timer triggered
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res6 = lamps_scheduler.alarm_id == 3;
+    bool res7 = lamps_scheduler.current_timer_index == 7;
+
+    // Third timer triggered, next index should be 0
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res8 = lamps_scheduler.alarm_id == 4;
+    bool res9 = lamps_scheduler.current_timer_index == 0;
+
+    // Fourth timer triggered, first alarm in time
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res10 = lamps_scheduler.alarm_id == 5;
+    bool res11 = lamps_scheduler.current_timer_index == 1;
+
+    // Fith timer triggered, end of first alarm
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res12 = lamps_scheduler.alarm_id == 6;
+    bool res13 = lamps_scheduler.current_timer_index == 2;
+
+    // Sixth timer triggered, we have 3 alarm in this time so index
+    // should be +3
+    // From here, the whols cycle repeats
+    if (alarm_hook)
+        alarm_hook();
+    else
+        return false;
+    bool res14 = lamps_scheduler.alarm_id == 7;
+    bool res15 = lamps_scheduler.current_timer_index == 5;
+
+    return res1 && res2 && res3 && res4 && res5 && res6 && res7 && res8 && \
+        res9 && res10 && res11 && res12 && res13 && res14 && res15;
+}
+
 static char * test_lamps_scheduler_sorted_len0() {
     mu_assert("error, test_lamps_scheduler_sorted_len0", _test_lamps_scheduler_sorted_len0());
     return 0;
@@ -176,6 +248,11 @@ static char * test_lamps_scheduler_init_5() {
     return 0;
 }
 
+static char * test_lamps_scheduler_evaluate_1() {
+    mu_assert("error, test_lamps_scheduler_evaluate_1", _test_lamps_scheduler_evaluate_1());
+    return 0;
+}
+
 static char * all_tests() {
     mu_run_test(test_lamps_scheduler_sorted_len0);
     mu_run_test(test_lamps_scheduler_sorted_len1_1);
@@ -185,7 +262,7 @@ static char * all_tests() {
     mu_run_test(test_lamps_scheduler_init_3);
     mu_run_test(test_lamps_scheduler_init_4);
     mu_run_test(test_lamps_scheduler_init_5);
-
+    mu_run_test(test_lamps_scheduler_evaluate_1);
     return 0;
 }
 

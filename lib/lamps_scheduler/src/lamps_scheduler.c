@@ -8,8 +8,14 @@ int8_t timer_compare(registered_lamp_timer_T t1, registered_lamp_timer_T t2);
 uint16_t minutes_in_timer(registered_lamp_timer_T t);
 void timer_start(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
 void timer_end(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
+void timer_print(registered_lamp_timer_T t);
 
 extern lamps_scheduler_T lamps_scheduler;
+
+void timer_print(registered_lamp_timer_T t) {
+    printf("[%d:%d (%d)]\n", t.hours, t.minutes, t.mode);
+}
+
 
 /*
  * Returns the amount of seconds in a timer
@@ -26,7 +32,10 @@ void timer_start(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, 
     registered_lamp_timer->lamp_pin = lamp_pin;
     registered_lamp_timer->hours = timer.hours;
     registered_lamp_timer->minutes = timer.minutes;
-    registered_lamp_timer->mode = LAMP_ON;
+    if (timer.duration == 0)
+        registered_lamp_timer->mode = LAMP_DISABLED;
+    else
+        registered_lamp_timer->mode = LAMP_ON;
 }
 
 /*
@@ -36,7 +45,10 @@ void timer_end(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, ui
     registered_lamp_timer->lamp_pin = lamp_pin;
     registered_lamp_timer->hours = timer.hours + (timer.duration / 60);
     registered_lamp_timer->minutes = timer.minutes + (timer.duration % 60);
-    registered_lamp_timer->mode = LAMP_OFF;
+    if (timer.duration == 0)
+        registered_lamp_timer->mode = LAMP_DISABLED;
+    else
+        registered_lamp_timer->mode = LAMP_OFF;
 }
 
 /*
@@ -49,8 +61,12 @@ void timer_end(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, ui
 int8_t timer_compare(registered_lamp_timer_T t1, registered_lamp_timer_T t2)
 {
     // Disabled lamps are always bigger
-    if (t2.mode == LAMP_DISABLED)
+    if (t1.mode == LAMP_DISABLED && t2.mode != LAMP_DISABLED)
+        return 1;
+    else if (t1.mode != LAMP_DISABLED && t2.mode == LAMP_DISABLED)
         return -1;
+    else if (t1.mode == LAMP_DISABLED && t2.mode == LAMP_DISABLED)
+        return 0;
     uint16_t total_minutes_t1 = minutes_in_timer(t1);
     uint16_t total_minutes_t2 = minutes_in_timer(t2);
     if (total_minutes_t1 > total_minutes_t2) {
@@ -91,21 +107,21 @@ void lamps_scheduler_create(lamp_timer_T *lamp_timers, uint8_t n_lamps) {
             tf->mode = LAMP_DISABLED;
         }
     }
-
     lamps_scheduler_sort(&lamps_scheduler);
+
     /* for (i=0;i<NLAMPS * NTIMERS * 2;i++) { */
     /*     registered_lamp_timer_T l = lamps_scheduler.registered_timers[i]; */
     /*     printf("%d - %d - %d:%d[%d]\n", i, l.lamp_pin, l.hours, l.minutes, l.mode); */
     /* } */
 }
 
-lamps_scheduler_T * lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler) {
-    int i = 0;
+lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler) {
+    int i = 1;
     while(i++ < NLAMPS * NTIMERS) {
         int j = i;
-        registered_lamp_timer_T *t1 = &lamps_scheduler->registered_timers[j-1];
-        registered_lamp_timer_T *t2 = &lamps_scheduler->registered_timers[j];
-        while (j-- > 0 && timer_compare(*t1, *t2) > 0) {
+        registered_lamp_timer_T *t1 = &lamps_scheduler->registered_timers[j];
+        registered_lamp_timer_T *t2 = &lamps_scheduler->registered_timers[j-1];
+        while (j-- > 0 && timer_compare(*t1, *t2) < 0) {
             registered_lamp_timer_T t3 = *t1;
             t1->hours = t2->hours;
             t1->minutes = t2->minutes;
@@ -115,28 +131,43 @@ lamps_scheduler_T * lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler) {
             t2->minutes = t3.minutes;
             t2->mode = t3.mode;
             t2->lamp_pin = t3.lamp_pin;
-            t1 = &lamps_scheduler->registered_timers[j-1];
-            t2 = &lamps_scheduler->registered_timers[j];
+            t1 = &lamps_scheduler->registered_timers[j];
+            t2 = &lamps_scheduler->registered_timers[j-1];
         }
     }
     return lamps_scheduler;
 }
 
 void lamps_scheduler_evaluate_registered_timers(lamps_scheduler_T * lamps_scheduler) {
-    uint8_t i = lamps_scheduler->current_timer_index;
+    uint8_t next_index = lamps_scheduler->current_timer_index;
+    registered_lamp_timer_T current_time;
     registered_lamp_timer_T t;
-    while (i < NLAMPS * NTIMERS * 2 && lamps_scheduler->registered_timers[i].mode != LAMP_DISABLED) {
+    t = lamps_scheduler->registered_timers[next_index];
+    current_time.hours = t.hours;
+    current_time.minutes = t.minutes;
+    current_time.mode = LAMP_OFF;
+    if (lamps_scheduler->registered_timers[next_index].mode == LAMP_ON)
+        lamps_seton(lamps_scheduler->registered_timers[next_index].lamp_pin);
+    else
+        lamps_setoff(lamps_scheduler->registered_timers[next_index].lamp_pin);
+    lamps_scheduler->current_timer_index = next_index + 1;
+    for (int i=next_index+1;i<NLAMPS * NTIMERS * 2;i++) {
+        t = lamps_scheduler->registered_timers[i];
+        if (t.mode == LAMP_DISABLED) {
+            lamps_scheduler->current_timer_index = 0;
+            break;
+        }
+        else if (timer_compare(t, current_time) > 0)
+            break;
+        else 
+            lamps_scheduler->current_timer_index = i + 1;
         if (lamps_scheduler->registered_timers[i].mode == LAMP_ON)
             lamps_seton(lamps_scheduler->registered_timers[i].lamp_pin);
         else
             lamps_setoff(lamps_scheduler->registered_timers[i].lamp_pin);
-        i++;
     }
 
-    if (lamps_scheduler->registered_timers[i].mode == LAMP_DISABLED || i >= NLAMPS * NTIMERS * 2) {
-        lamps_scheduler->current_timer_index = 0;
-    }
-
+    // Prepare next timer!
     t = lamps_scheduler->registered_timers[lamps_scheduler->current_timer_index];
     lamps_scheduler->alarm_id = set_alarm(t, lamps_scheduler->alarm_id, onAlarmHook);
 }
@@ -164,7 +195,7 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
         } else {
             // first t in the future, next alarm
             lamps_scheduler->alarm_id = set_alarm(t, 0, onAlarmHook);
-            lamps_scheduler->current_timer_index = i - 1;
+            lamps_scheduler->current_timer_index = i;
             for (int j=0;j<i;j++) {
                 if ((initial_lamp_pins >> j) & 1) {
                     lamps_seton(j+2);
