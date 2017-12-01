@@ -36,6 +36,9 @@ typedef struct lamps_scheduler_T {
     uint8_t alarm_id;
 } lamps_scheduler_T;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 // Interface exported
 void lamps_scheduler_create(lamp_timer_T *lamps, uint8_t n_timers);
 void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler); 
@@ -45,5 +48,8 @@ void get_current_time(registered_lamp_timer_T *current_time);
 void lamps_seton(uint8_t lamp_pin);
 void lamps_setoff(uint8_t lamp_pin);
 uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t alarm_hook);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
