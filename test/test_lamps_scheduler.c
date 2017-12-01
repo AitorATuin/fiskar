@@ -20,7 +20,7 @@ void lamps_seton(uint8_t lamp_pin) {
 }
 
 void lamps_setoff(uint8_t lamp_pin) {
-
+    lamps_on &= lamps_on ^ (1 << (lamp_pin - 2));
 }
 
 uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t a_hook) {
@@ -153,6 +153,7 @@ bool _test_lamps_scheduler_evaluate_1() {
     bool res1 = _test_lamps_scheduler_init(lamp_timers, 4, 14);
     bool res2 = lamps_scheduler.alarm_id == 1;
     bool res3 = lamps_scheduler.current_timer_index == 5;
+    uint8_t lamps1 = lamps_on; // 14
 
     // First timer triggered
     if (alarm_hook)
@@ -161,6 +162,7 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res4 = lamps_scheduler.alarm_id == 2;
     bool res5 = lamps_scheduler.current_timer_index == 6;
+    uint8_t lamps2 = lamps_on; // 12
 
     // Second timer triggered
     if (alarm_hook)
@@ -169,6 +171,7 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res6 = lamps_scheduler.alarm_id == 3;
     bool res7 = lamps_scheduler.current_timer_index == 7;
+    uint8_t lamps3 = lamps_on; // 8
 
     // Third timer triggered, next index should be 0
     if (alarm_hook)
@@ -177,6 +180,7 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res8 = lamps_scheduler.alarm_id == 4;
     bool res9 = lamps_scheduler.current_timer_index == 0;
+    uint8_t lamps4 = lamps_on; // 0
 
     // Fourth timer triggered, first alarm in time
     if (alarm_hook)
@@ -185,6 +189,7 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res10 = lamps_scheduler.alarm_id == 5;
     bool res11 = lamps_scheduler.current_timer_index == 1;
+    uint8_t lamps5 = lamps_on; // 1
 
     // Fith timer triggered, end of first alarm
     if (alarm_hook)
@@ -193,6 +198,7 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res12 = lamps_scheduler.alarm_id == 6;
     bool res13 = lamps_scheduler.current_timer_index == 2;
+    uint8_t lamps6 = lamps_on; // 0
 
     // Sixth timer triggered, we have 3 alarm in this time so index
     // should be +3
@@ -203,9 +209,12 @@ bool _test_lamps_scheduler_evaluate_1() {
         return false;
     bool res14 = lamps_scheduler.alarm_id == 7;
     bool res15 = lamps_scheduler.current_timer_index == 5;
+    uint8_t lamps7 = lamps_on; // 14
 
     return res1 && res2 && res3 && res4 && res5 && res6 && res7 && res8 && \
-        res9 && res10 && res11 && res12 && res13 && res14 && res15;
+        res9 && res10 && res11 && res12 && res13 && res14 && res15 && \
+        lamps1 == 14 && lamps2 == 12 && lamps3 == 8 && lamps4 == 0 && \
+        lamps5 == 1 && lamps6 == 0 && lamps7 == 14;
 }
 
 static char * test_lamps_scheduler_sorted_len0() {
