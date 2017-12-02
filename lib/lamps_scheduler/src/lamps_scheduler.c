@@ -162,7 +162,8 @@ void lamps_scheduler_evaluate_registered_timers(lamps_scheduler_T * lamps_schedu
 
     // Prepare next timer!
     t = lamps_scheduler->registered_timers[lamps_scheduler->current_timer_index];
-    lamps_scheduler->alarm_id = set_alarm(t, lamps_scheduler->alarm_id, onAlarmHook);
+    cancel_alarm(lamps_scheduler->alarm_id);
+    lamps_scheduler->alarm_id = set_alarm(t, onAlarmHook);
 }
 
 void onAlarmHook() {
@@ -187,7 +188,7 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
             }
         } else {
             // first t in the future, next alarm
-            lamps_scheduler->alarm_id = set_alarm(t, 0, onAlarmHook);
+            lamps_scheduler->alarm_id = set_alarm(t, onAlarmHook);
             lamps_scheduler->current_timer_index = i;
             for (int j=0;j<i;j++) {
                 if ((initial_lamp_pins >> j) & 1) {

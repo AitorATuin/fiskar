@@ -41,18 +41,15 @@ void lamps_setoff(uint8_t lamp_pin) {
     digitalWrite(lamp_pin, LOW);
 }
 
-uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t alarm_hook) {
+void cancel_alarm(uint8_t alarm_id) {
+    Alarm.free(alarm_id);
+}
+
+uint8_t set_alarm(registered_lamp_timer_T timer, alarm_hook_t alarm_hook) {
     SerialPrintF("Setting alarm: %d:%d\n", timer.hours, timer.minutes);
     uint8_t alarm_id = Alarm.alarmOnce(timer.hours, timer.minutes, 0, alarm_hook);
     return alarm_id;
 }
-
-// void cancelTimer(timerT *timer) {
-//     Alarm.free(timer->alarmId0);
-//     Alarm.free(timer->alarmIdF);
-//     timer->alarmId0 = dtINVALID_ALARM_ID;
-//     timer->alarmIdF = dtINVALID_ALARM_ID;
-// }
 
 void setup() {
     for (int i=2;i<=8;i++)

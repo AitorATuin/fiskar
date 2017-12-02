@@ -47,7 +47,8 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler);
 void get_current_time(registered_lamp_timer_T *current_time);
 void lamps_seton(uint8_t lamp_pin);
 void lamps_setoff(uint8_t lamp_pin);
-uint8_t set_alarm(registered_lamp_timer_T timer, uint8_t old_alarm_id, alarm_hook_t alarm_hook);
+uint8_t set_alarm(registered_lamp_timer_T timer, alarm_hook_t alarm_hook);
+void cancel_alarm(uint8_t alarm_id);
 #ifdef __cplusplus
 }
 #endif
