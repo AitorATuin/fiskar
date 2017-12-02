@@ -8,7 +8,6 @@ static uint16_t minutes_in_timer(registered_lamp_timer_T t);
 static void timer_start(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
 static void timer_end(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
 static void onAlarmHook();
-
 extern lamps_scheduler_T lamps_scheduler;
 
 /*
@@ -173,7 +172,7 @@ void onAlarmHook() {
 void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
     registered_lamp_timer_T current_time;
     get_current_time(&current_time);
-    uint8_t initial_lamp_pins; 
+    uint8_t initial_lamp_pins = 0; 
     // Set lamps according to current_time
     for (int i=0;i<NLAMPS * NTIMERS * 2;i++) {
         registered_lamp_timer_T t = lamps_scheduler->registered_timers[i];
