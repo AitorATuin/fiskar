@@ -217,6 +217,25 @@ bool _test_lamps_scheduler_evaluate_1() {
         lamps5 == 1 && lamps6 == 0 && lamps7 == 14;
 }
 
+static bool _test_lamps_scheduler_evaluate_2() {
+    lamps_on = 0;
+    new_alarm_id = 0;
+    current_time = (timer_T){1, 12, 0};
+    lamp_timer_T lamp_timers[4] = {
+        {2, {{0, 1, 10}, {0, 0, 0}, {0, 0, 0}}},
+        {3, {{0, 1, 20}, {0, 0, 0}, {0, 0, 0}}},
+        {4, {{0, 20, 21}, {0, 0, 0}, {0, 0, 0}}},
+        {5, {{2, 20, 30}, {0, 0, 0}, {0, 0, 0}}},
+    };
+    lamps_scheduler_create(lamp_timers, 4);
+    lamps_scheduler_init(&lamps_scheduler);
+    bool res1 = lamps_scheduler.alarm_id == 1;
+    bool res2 = lamps_scheduler.current_timer_index == 6;
+    bool res3 = lamps_on == 0;
+
+    return res1 && res2 && res3;
+}
+
 static char * test_lamps_scheduler_sorted_len0() {
     mu_assert("error, test_lamps_scheduler_sorted_len0", _test_lamps_scheduler_sorted_len0());
     return 0;
@@ -262,6 +281,11 @@ static char * test_lamps_scheduler_evaluate_1() {
     return 0;
 }
 
+static char * test_lamps_scheduler_evaluate_2() {
+    mu_assert("error, test_lamps_scheduler_evaluate_2", _test_lamps_scheduler_evaluate_2());
+    return 0;
+}
+
 static char * all_tests() {
     mu_run_test(test_lamps_scheduler_sorted_len0);
     mu_run_test(test_lamps_scheduler_sorted_len1_1);
@@ -272,6 +296,7 @@ static char * all_tests() {
     mu_run_test(test_lamps_scheduler_init_4);
     mu_run_test(test_lamps_scheduler_init_5);
     mu_run_test(test_lamps_scheduler_evaluate_1);
+    mu_run_test(test_lamps_scheduler_evaluate_2);
     return 0;
 }
 
