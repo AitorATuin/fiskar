@@ -170,6 +170,11 @@ void onAlarmHook() {
     lamps_scheduler_evaluate_registered_timers(&lamps_scheduler);
 }
 
+void lamps_scheduler_set_clock_time(timer_T new_time) {
+    set_clock_time(new_time);
+    lamps_scheduler_init(&lamps_scheduler);
+}
+
 void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
     registered_lamp_timer_T current_time;
     get_current_time(&current_time);
@@ -190,12 +195,14 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
             // first t in the future, next alarm
             lamps_scheduler->alarm_id = set_alarm(t, onAlarmHook);
             lamps_scheduler->current_timer_index = i;
-            for (int j=0;j<i;j++) {
-                if ((initial_lamp_pins >> j) & 1) {
-                    lamps_seton(j+2);
-                }
-            }
             break;
         }
+    }
+    // Turn on / off the lamps
+    for (int i=0;i<NLAMPS;i++) {
+        if ((initial_lamp_pins >> i) & 1) 
+            lamps_seton(i+2);
+        else
+            lamps_setoff(i+2);
     }
 }

@@ -15,6 +15,11 @@ uint8_t new_alarm_id = 0;
 
 alarm_hook_t alarm_hook = NULL;
 
+void set_clock_time(timer_T new_time) {
+    current_time.hours = new_time.hours;
+    current_time.minutes = new_time.minutes;
+}
+
 void lamps_seton(uint8_t lamp_pin) {
     lamps_on |= 1 << (lamp_pin - 2);
 }
@@ -236,7 +241,31 @@ static bool _test_lamps_scheduler_evaluate_2() {
     bool res2 = lamps_scheduler.current_timer_index == 6;
     bool res3 = lamps_on == 0;
 
-    return res1 && res2 && res3;
+    // Test that when setting a new clock time, alarms are computed again
+    timer_T new_clock_time = {0, 2, 0};
+    lamps_scheduler_set_clock_time(new_clock_time);
+    bool res4 = lamps_scheduler.alarm_id == 2;
+    bool res5 = lamps_scheduler.current_timer_index == 2;
+    bool res6 = lamps_on == 3;
+    
+    // Test that when setting a new clock time, alarms are computed again
+    new_clock_time.hours = 0;
+    new_clock_time.minutes = 0;
+    lamps_scheduler_set_clock_time(new_clock_time);
+    bool res7 = lamps_scheduler.alarm_id == 3;
+    bool res8 = lamps_scheduler.current_timer_index == 0;
+    bool res9 = lamps_on == 0;
+    
+    // Test that when setting a new clock time, alarms are computed again
+    new_clock_time.hours = 2;
+    new_clock_time.minutes = 40;
+    lamps_scheduler_set_clock_time(new_clock_time);
+    bool res10 = lamps_scheduler.alarm_id == 4;
+    bool res11 = lamps_scheduler.current_timer_index == 7;
+    bool res12 = lamps_on == 8;
+
+    return res1 && res2 && res3 && res4 && res5 && res6 && res7 && res8 \
+        && res9 && res10 && res11 && res12;
 }
 
 static char * test_lamps_scheduler_sorted_len0() {
