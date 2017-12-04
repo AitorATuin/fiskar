@@ -73,6 +73,13 @@ int8_t timer_compare(registered_lamp_timer_T t1, registered_lamp_timer_T t2)
     return 0;
 }
 
+void debug_registered_timers(lamps_scheduler_T *lamps_scheduler) {
+    for (uint8_t i=0;i<NLAMPS * NTIMERS * 2;i++) {
+        registered_lamp_timer_T l = lamps_scheduler->registered_timers[i];
+        printf("%d - %d - %d:%d[%d]\n", i, l.lamp_pin, l.hours, l.minutes, l.mode);
+    }
+}
+
 void lamps_scheduler_create(lamp_timer_T *lamp_timers, uint8_t n_lamps) {
     int i = 0;
     for (i=0;i < n_lamps;i++) {
@@ -105,15 +112,10 @@ void lamps_scheduler_create(lamp_timer_T *lamp_timers, uint8_t n_lamps) {
         }
     }
     lamps_scheduler_sort(&lamps_scheduler);
-
-    /* for (i=0;i<NLAMPS * NTIMERS * 2;i++) { */
-    /*     registered_lamp_timer_T l = lamps_scheduler.registered_timers[i]; */
-    /*     printf("%d - %d - %d:%d[%d]\n", i, l.lamp_pin, l.hours, l.minutes, l.mode); */
-    /* } */
 }
 
 lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler) {
-    int i = 1;
+    int i = 0;
     while(i++ < NLAMPS * NTIMERS) {
         int j = i;
         registered_lamp_timer_T *t1 = &lamps_scheduler->registered_timers[j];
@@ -214,20 +216,20 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
 }
 
 uint8_t lamps_scheduler_replace_timer(lamps_scheduler_T *lamps_scheduler, timer_T timer, uint8_t lamp_pin, uint8_t timer_n) {
-    registered_lamp_timer_T t, t0, tf;
+    registered_lamp_timer_T *t, t0, tf;
     timer_start(&t0, timer, lamp_pin, timer_n);
     timer_end(&tf, timer, lamp_pin, timer_n);
     uint8_t timers_reallocated = 0;
     for (uint8_t i=0;i<NLAMPS * NTIMERS * 2;i++) {
-        t = lamps_scheduler->registered_timers[i];
-        if (t.lamp_pin == lamp_pin && t.timer_n == timer_n) {
+        t = lamps_scheduler->registered_timers + i;
+        if (t->lamp_pin == lamp_pin && t->timer_n == timer_n) {
             if (timers_reallocated == 0) {
-                t.hours = t0.hours;
-                t.minutes = t0.minutes;
+                t->hours = t0.hours;
+                t->minutes = t0.minutes;
             }
             else if(timers_reallocated == 1) {
-                t.hours = tf.hours;
-                t.minutes = tf.minutes;
+                t->hours = tf.hours;
+                t->minutes = tf.minutes;
             }
             timers_reallocated++;
         }
