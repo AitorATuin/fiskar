@@ -212,3 +212,30 @@ void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler) {
             lamps_setoff(i+2);
     }
 }
+
+uint8_t lamps_scheduler_replace_timer(lamps_scheduler_T *lamps_scheduler, timer_T timer, uint8_t lamp_pin, uint8_t timer_n) {
+    registered_lamp_timer_T t, t0, tf;
+    timer_start(&t0, timer, lamp_pin, timer_n);
+    timer_end(&tf, timer, lamp_pin, timer_n);
+    uint8_t timers_reallocated = 0;
+    for (uint8_t i=0;i<NLAMPS * NTIMERS * 2;i++) {
+        t = lamps_scheduler->registered_timers[i];
+        if (t.lamp_pin == lamp_pin && t.timer_n == timer_n) {
+            if (timers_reallocated == 0) {
+                t.hours = t0.hours;
+                t.minutes = t0.minutes;
+            }
+            else if(timers_reallocated == 1) {
+                t.hours = tf.hours;
+                t.minutes = tf.minutes;
+            }
+            timers_reallocated++;
+        }
+    }
+    if (timers_reallocated == 2) {
+        lamps_scheduler_sort(lamps_scheduler);
+        lamps_scheduler_init(lamps_scheduler);
+        return 1;
+    } else
+        return 0;
+}

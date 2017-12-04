@@ -44,6 +44,7 @@ extern "C" {
 void lamps_scheduler_create(lamp_timer_T *lamps, uint8_t n_timers);
 void lamps_scheduler_init(lamps_scheduler_T *lamps_scheduler); 
 void lamps_scheduler_set_clock_time(timer_T new_time);
+uint8_t lamps_scheduler_replace_timer(lamps_scheduler_T * lamps_scheduler, timer_T timer, uint8_t lamp_pin, uint8_t timer_n);
 
 // Functions needed
 void get_current_time(registered_lamp_timer_T *current_time);
