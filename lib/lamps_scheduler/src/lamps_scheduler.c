@@ -2,11 +2,11 @@
 #include "lamps_scheduler.h"
 
 static void lamps_scheduler_evaluate_registered_timers();
-static lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler);
-static int8_t timer_compare(registered_lamp_timer_T t1, registered_lamp_timer_T t2);
-static uint16_t minutes_in_timer(registered_lamp_timer_T t);
-static void timer_start(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
-static void timer_end(registered_lamp_timer_T *registered_lamp_timer_T, timer_T timer_T, uint8_t lamp_pin);
+static lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *);
+static int8_t timer_compare(registered_lamp_timer_T, registered_lamp_timer_T);
+static uint16_t minutes_in_timer(registered_lamp_timer_T);
+static void timer_start(registered_lamp_timer_T *, timer_T, uint8_t, uint8_t);
+static void timer_end(registered_lamp_timer_T *, timer_T, uint8_t, uint8_t);
 static void onAlarmHook();
 extern lamps_scheduler_T lamps_scheduler;
 
@@ -21,8 +21,9 @@ uint16_t minutes_in_timer(registered_lamp_timer_T t)
 /*
  * Computes the initial time for timer and lamp_pin
  */
-void timer_start(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, uint8_t lamp_pin) {
+void timer_start(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, uint8_t lamp_pin, uint8_t timer_n) {
     registered_lamp_timer->lamp_pin = lamp_pin;
+    registered_lamp_timer->timer_n = timer_n;
     registered_lamp_timer->hours = timer.hours;
     registered_lamp_timer->minutes = timer.minutes;
     if (timer.duration == 0)
@@ -34,8 +35,9 @@ void timer_start(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, 
 /*
  * Computes the final time for timer and lamp_pin
  */
-void timer_end(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, uint8_t lamp_pin) {
+void timer_end(registered_lamp_timer_T *registered_lamp_timer, timer_T timer, uint8_t lamp_pin, uint8_t timer_n) {
     registered_lamp_timer->lamp_pin = lamp_pin;
+    registered_lamp_timer->timer_n = timer_n;
     registered_lamp_timer->hours = timer.hours + (timer.duration / 60);
     registered_lamp_timer->minutes = timer.minutes + (timer.duration % 60);
     if (timer.duration == 0)
@@ -80,8 +82,8 @@ void lamps_scheduler_create(lamp_timer_T *lamp_timers, uint8_t n_lamps) {
             int n = (i * NTIMERS * 2) + j; 
             registered_lamp_timer_T *t0 = &lamps_scheduler.registered_timers[n];
             registered_lamp_timer_T *tf = &lamps_scheduler.registered_timers[n + NTIMERS];
-            timer_start(t0, timers[j], lamp_pin);
-            timer_end(tf, timers[j], lamp_pin);
+            timer_start(t0, timers[j], lamp_pin, j);
+            timer_end(tf, timers[j], lamp_pin, j);
 
         }
     }
@@ -93,10 +95,12 @@ void lamps_scheduler_create(lamp_timer_T *lamp_timers, uint8_t n_lamps) {
             t0->hours = 0;
             t0->minutes = 0;
             t0->lamp_pin = 0;
+            t0->timer_n = j;
             t0->mode = LAMP_DISABLED;
             tf->hours = 0;
             tf->minutes = 0;
             tf->lamp_pin = 0;
+            tf->timer_n = 0;
             tf->mode = LAMP_DISABLED;
         }
     }
@@ -120,10 +124,12 @@ lamps_scheduler_T *lamps_scheduler_sort(lamps_scheduler_T *lamps_scheduler) {
             t1->minutes = t2->minutes;
             t1->mode = t2->mode;
             t1->lamp_pin = t2->lamp_pin;
+            t1->timer_n = t2->timer_n;
             t2->hours = t3.hours;
             t2->minutes = t3.minutes;
             t2->mode = t3.mode;
             t2->lamp_pin = t3.lamp_pin;
+            t2->timer_n = t3.timer_n;
             t1 = &lamps_scheduler->registered_timers[j];
             t2 = &lamps_scheduler->registered_timers[j-1];
         }

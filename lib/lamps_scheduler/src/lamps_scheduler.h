@@ -25,6 +25,7 @@ typedef struct lamp_timer_T {
 
 typedef struct registered_lamp_timer_T {
     uint8_t lamp_pin;
+    uint8_t timer_n;
     uint8_t hours;
     uint8_t minutes;
     uint8_t mode;
