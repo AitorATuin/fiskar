@@ -2,7 +2,9 @@
 #include <TimeLib.h>
 #include <Time.h>
 #include <TimeAlarms.h>
+#include <Wire.h>
 #include "lamps_scheduler.h"
+#include <RTClib.h>
 
 #define USED_LAMPS 4
 
@@ -18,6 +20,8 @@ lamp_timer_T lamp_timers[USED_LAMPS] = {
 
 // Declare the scheduler taking care of our lamps
 lamps_scheduler_T lamps_scheduler;
+
+RTC_DS1307 rtc;
 
 void SerialPrintF(const char *fmt, ... ){
     char buf[128]; // resulting string limited to 128 chars
@@ -59,6 +63,7 @@ uint8_t set_alarm(registered_lamp_timer_T timer, alarm_hook_t alarm_hook) {
 }
 
 void set_clock_time(timer_T new_time) {
+    rtc.adjust(DateTime(2017, 12, 1, new_time.hours, new_time.minutes, 0));
 }
 
 /*
@@ -154,8 +159,7 @@ uint8_t prompt_set_lamp_and_timer(uint8_t lamp, uint8_t timer) {
         return 0;
     if (!prompt_parse_time(&t, input))
         return 0;
-    // set new time and duration
-    // refresh lamps_scheduler
+    lamps_scheduler_replace_timer(&lamps_scheduler, t, lamp, timer);
     return 1;
 }
 
@@ -212,6 +216,13 @@ void setup() {
         pinMode(i, OUTPUT);
     Serial.begin(9600);
     while (!Serial) ;
+    if (!rtc.begin()) {
+        Serial.println("RTC not found!");
+        while (1);
+    }
+    if (!rtc.isrunning()) {
+        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
     Serial.println("Setting lamps ...");
     lamps_scheduler_create(lamp_timers, USED_LAMPS);
     lamps_scheduler_init(&lamps_scheduler);
